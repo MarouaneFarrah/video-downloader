@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحميل الفيديوهات والأصوات</title>
+    <!-- مكتبة Tailwind CSS للتصميم والأيقونات -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            touch-action: manipulation;
+        }
+        .pulse-btn {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
+
+    <!-- شريط علوي رئيسب -->
+    <header class="w-full max-w-lg bg-white p-4 rounded-3xl shadow-sm text-center mb-4 flex justify-between items-center border border-slate-200">
+        <h1 class="text-2xl font-black text-slate-800">برنامج التحميل 📥</h1>
+        <!-- زر قراءة التعليمات بصوت واضح -->
+        <button onclick="speakHelp()" class="bg-amber-100 text-amber-800 font-bold px-4 py-2 rounded-2xl flex items-center gap-2 border border-amber-300 active:scale-95 transition text-lg">
+            <i class="fa-solid fa-volume-high text-xl"></i>
+            <span>مساعدة صوتية</span>
+        </button>
+    </header>
+
+    <main class="w-full max-w-lg bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-200 flex-1 flex flex-col justify-center space-y-6">
+
+        <!-- الخطوة 1: لصق الرابط -->
+        <div class="space-y-3">
+            <label class="block text-xl font-bold text-slate-700 flex items-center gap-2">
+                <span class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg">1</span>
+                ضعي رابط الفيديو هنا:
+            </label>
+            
+            <div class="flex gap-2">
+                <input type="text" id="videoUrl" placeholder="إلصقي الرابط هنا..." 
+                    class="w-full text-xl p-4 border-4 border-slate-300 rounded-2xl focus:border-blue-500 focus:outline-none transition">
+                
+                <button onclick="pasteFromClipboard()" class="bg-slate-200 text-slate-700 font-bold px-5 rounded-2xl flex flex-col items-center justify-center active:scale-95 transition border border-slate-300">
+                    <i class="fa-solid fa-paste text-2xl"></i>
+                    <span class="text-sm">لصق</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- الخطوة 2: اختيار نوع التحميل (فيديو أم صوت) -->
+        <div class="space-y-3">
+            <label class="block text-xl font-bold text-slate-700 flex items-center gap-2">
+                <span class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg">2</span>
+                اختاري كيف تريدين التنزيل:
+            </label>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <!-- اختيار فيديو -->
+                <button id="btnVideo" onclick="selectType('video')" 
+                    class="type-btn p-5 rounded-2xl border-4 border-blue-600 bg-blue-50 flex flex-col items-center justify-center gap-2 transition active:scale-95">
+                    <i class="fa-solid fa-file-video text-5xl text-blue-600"></i>
+                    <span class="text-2xl font-black text-blue-900">فيديو 🎬</span>
+                </button>
+
+                <!-- اختيار صوت فقط -->
+                <button id="btnAudio" onclick="selectType('audio')" 
+                    class="type-btn p-5 rounded-2xl border-4 border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-2 transition active:scale-95">
+                    <i class="fa-solid fa-music text-5xl text-slate-400"></i>
+                    <span class="text-2xl font-black text-slate-600">صوت فقط 🎵</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- الخطوة 3: زر التحميل الكبيرة -->
+        <button onclick="startDownload()" 
+            class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-3xl py-6 rounded-3xl shadow-xl flex items-center justify-center gap-3 active:scale-95 transition pulse-btn mt-4">
+            <i class="fa-solid fa-circle-down text-4xl"></i>
+            <span>تنزيل الآن</span>
+        </button>
+
+        <!-- منطقة إظهار الحالة والنتائج -->
+        <div id="statusMessage" class="hidden p-4 rounded-2xl text-center text-xl font-bold"></div>
+
+    </main>
+
+    <footer class="mt-4 text-slate-400 font-bold text-sm">
+        مصمم بحب للعائلة ❤️
+    </footer>
+
+    <script>
+        let selectedType = 'video';
+        
+        // رابط خادم الباك إند الخاص بك (قم باستبداله برابط Vercel أو Render بعد رفعه)
+        const BACKEND_API_URL = "https://your-backend-app.vercel.app/download";
+
+        // اختيار نوع التحميل (فيديو / صوت)
+        function selectType(type) {
+            selectedType = type;
+            const btnVideo = document.getElementById('btnVideo');
+            const btnAudio = document.getElementById('btnAudio');
+
+            if (type === 'video') {
+                btnVideo.className = "type-btn p-5 rounded-2xl border-4 border-blue-600 bg-blue-50 flex flex-col items-center justify-center gap-2 transition active:scale-95";
+                btnVideo.querySelector('i').className = "fa-solid fa-file-video text-5xl text-blue-600";
+                btnVideo.querySelector('span').className = "text-2xl font-black text-blue-900";
+
+                btnAudio.className = "type-btn p-5 rounded-2xl border-4 border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-2 transition active:scale-95";
+                btnAudio.querySelector('i').className = "fa-solid fa-music text-5xl text-slate-400";
+                btnAudio.querySelector('span').className = "text-2xl font-black text-slate-600";
+            } else {
+                btnAudio.className = "type-btn p-5 rounded-2xl border-4 border-emerald-600 bg-emerald-50 flex flex-col items-center justify-center gap-2 transition active:scale-95";
+                btnAudio.querySelector('i').className = "fa-solid fa-music text-5xl text-emerald-600";
+                btnAudio.querySelector('span').className = "text-2xl font-black text-emerald-900";
+
+                btnVideo.className = "type-btn p-5 rounded-2xl border-4 border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-2 transition active:scale-95";
+                btnVideo.querySelector('i').className = "fa-solid fa-file-video text-5xl text-slate-400";
+                btnVideo.querySelector('span').className = "text-2xl font-black text-slate-600";
+            }
+        }
+
+        // لصق تلقائي من الحافظة
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('videoUrl').value = text;
+            } catch (err) {
+                alert('الرجاء لصق الرابط يدويًا داخل الخانة');
+            }
+        }
+
+        // قراءة تعليمات بصوت مسموع لسهولة الاستخدام
+        function speakHelp() {
+            const text = "انسخي الرابط، ثم ضعيه في المربع الأول، واختاري فيديو أو صوت، ثم اضغطي الزر الأخضر للتنزيل.";
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ar-SA';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // إرسال الطلب إلى الباك إند
+        async function startDownload() {
+            const urlInput = document.getElementById('videoUrl').value.trim();
+            const statusDiv = document.getElementById('statusMessage');
+
+            if (!urlInput) {
+                statusDiv.className = "p-4 rounded-2xl text-center text-xl font-bold bg-amber-100 text-amber-900 block border-2 border-amber-300";
+                statusDiv.innerText = "⚠️ من فضلك ضعي رابط الفيديو أولاً!";
+                return;
+            }
+
+            statusDiv.className = "p-4 rounded-2xl text-center text-xl font-bold bg-blue-100 text-blue-900 block border-2 border-blue-300 animate-pulse";
+            statusDiv.innerText = "⏳ جاري تحضير التحميل، انتظري قليلاً...";
+
+            try {
+                const response = await fetch(`${BACKEND_API_URL}?url=${encodeURIComponent(urlInput)}&type=${selectedType}`);
+                const data = await response.json();
+
+                if (data.success && data.downloadUrl) {
+                    statusDiv.className = "p-4 rounded-2xl text-center text-xl font-bold bg-emerald-100 text-emerald-900 block border-2 border-emerald-300";
+                    statusDiv.innerHTML = `✅ جاهز! <a href="${data.downloadUrl}" target="_blank" download class="underline font-black text-emerald-700 block mt-2 text-2xl">اضغطي هنا لبدء التنزيل المباشر ⬇️</a>`;
+                } else {
+                    throw new Error(data.message || 'تعذر جلب الفيديو');
+                }
+            } catch (error) {
+                statusDiv.className = "p-4 rounded-2xl text-center text-xl font-bold bg-rose-100 text-rose-900 block border-2 border-rose-300";
+                statusDiv.innerText = "❌ حدث خطأ، تأكدي من أن الرابط صحيح وحاولي مجدداً.";
+            }
+        }
+    </script>
+</body>
+</html>
