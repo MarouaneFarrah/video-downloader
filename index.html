@@ -23,7 +23,7 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <!-- شريط علوي رئيسب -->
+    <!-- شريط علوي رئيسي -->
     <header class="w-full max-w-lg bg-white p-4 rounded-3xl shadow-sm text-center mb-4 flex justify-between items-center border border-slate-200">
         <h1 class="text-2xl font-black text-slate-800">برنامج التحميل 📥</h1>
         <!-- زر قراءة التعليمات بصوت واضح -->
@@ -89,16 +89,9 @@
 
     </main>
 
-    <footer class="mt-4 text-slate-400 font-bold text-sm">
-        مصمم بحب للعائلة ❤️
-    </footer>
-
     <script>
         let selectedType = 'video';
         
-        // رابط خادم الباك إند الخاص بك (قم باستبداله برابط Vercel أو Render بعد رفعه)
-        //const BACKEND_API_URL = "https://your-backend-app.vercel.app/download";
-        const BACKEND_API_URL = "/.netlify/functions/download";
         // اختيار نوع التحميل (فيديو / صوت)
         function selectType(type) {
             selectedType = type;
@@ -142,7 +135,7 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        // إرسال الطلب إلى الباك إند
+        // دالة التحميل المباشرة والآمنة
         async function startDownload() {
             const urlInput = document.getElementById('videoUrl').value.trim();
             const statusDiv = document.getElementById('statusMessage');
@@ -157,16 +150,28 @@
             statusDiv.innerText = "⏳ جاري تحضير التحميل، انتظري قليلاً...";
 
             try {
-                const response = await fetch(`${BACKEND_API_URL}?url=${encodeURIComponent(urlInput)}&type=${selectedType}`);
+                const response = await fetch('https://co.wuk.sh/api/json', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: urlInput,
+                        isAudioOnly: selectedType === 'audio'
+                    })
+                });
+
                 const data = await response.json();
 
-                if (data.success && data.downloadUrl) {
+                if (data.status === 'stream' || data.status === 'redirect') {
                     statusDiv.className = "p-4 rounded-2xl text-center text-xl font-bold bg-emerald-100 text-emerald-900 block border-2 border-emerald-300";
-                    statusDiv.innerHTML = `✅ جاهز! <a href="${data.downloadUrl}" target="_blank" download class="underline font-black text-emerald-700 block mt-2 text-2xl">اضغطي هنا لبدء التنزيل المباشر ⬇️</a>`;
+                    statusDiv.innerHTML = `✅ جاهز! <a href="${data.url}" target="_blank" download class="underline font-black text-emerald-700 block mt-2 text-2xl">اضغطي هنا لبدء التنزيل المباشر ⬇️</a>`;
                 } else {
-                    throw new Error(data.message || 'تعذر جلب الفيديو');
+                    throw new Error('تعذر جلب الرابط');
                 }
             } catch (error) {
+                console.error('Error:', error);
                 statusDiv.className = "p-4 rounded-2xl text-center text-xl font-bold bg-rose-100 text-rose-900 block border-2 border-rose-300";
                 statusDiv.innerText = "❌ حدث خطأ، تأكدي من أن الرابط صحيح وحاولي مجدداً.";
             }
